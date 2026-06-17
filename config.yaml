@@ -1,0 +1,25 @@
+# JARVIS Base Configuration
+
+models:
+  fast: "meta-llama/llama-3.3-70b-instruct"
+  deep: "deepseek/deepseek-chat"
+  vision: "qwen2-vl:7b"
+  tts_voice: "af_heart"
+  stt: "small.en"
+  kokoro_onnx: "models/kokoro-v1.0.onnx"
+  kokoro_voices: "models/voices-v1.0.bin"
+  wake_word: "hey_mycroft"
+
+system:
+  log_level: "INFO"
+  openrouter_url: "https://openrouter.ai/api/v1/chat/completions"
+  openrouter_api_key: ""
+  workspace_dir: "memory"
+  plugins_dir: "plugins"
+  models_dir: "models"
+
+perception:
+  ambient_loop_interval: 60
+  context_monitor_interval: 5.0
+  input_device_index: null  # null means auto-select default
+  output_device_index: null # null means auto-select default
