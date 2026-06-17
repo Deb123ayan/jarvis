@@ -37,16 +37,32 @@ def _timer_thread_func(timer_id: str, name: str, duration: int):
         time.sleep(min(1.0, end_time - time.time()))
         
     # Timer finished
-    # Clear the countdown line and redraw the prompt
-    print(f"\r[TIMER '{name}'] 0 seconds remaining... Done!    \nYou: ", end="", flush=True)
-    
+    # Clear the countdown line, write a loud visual alert to stderr (bypasses input() block),
+    # then speak the message twice so it's impossible to miss.
+    import sys
+    alert = (
+        f"\a\r\n"
+        f"{'='*55}\n"
+        f"  ⏰  TIMER '{name}' IS UP!\n"
+        f"{'='*55}\n"
+        f"You: "
+    )
+    sys.stderr.write(alert)
+    sys.stderr.flush()
+
     with _timer_lock:
         if timer_id in _active_timers:
             del _active_timers[timer_id]
             logger.info(f"Timer '{name}' finished.")
-            # Publish directly to TTS so the user immediately sees and hears the alert.
-            msg = f"Timer '{name}' for {duration} seconds is up!"
+            msg = f"Hey! Your timer '{name}' is up!"
             bus.publish(Event.TTS_ENQUEUE, msg)
+            # Repeat once after 4 seconds
+            import threading, time as _time
+            def _repeat():
+                _time.sleep(4)
+                bus.publish(Event.TTS_ENQUEUE, f"Timer '{name}' is done!")
+            threading.Thread(target=_repeat, daemon=True).start()
+
 
 def set_timer(seconds: int, name: str = "default") -> str:
     """

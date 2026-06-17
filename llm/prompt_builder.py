@@ -93,6 +93,13 @@ def is_tool_intent(transcript: str) -> bool:
     This avoids sending tool schema for purely conversational exchanges,
     which keeps the prompt smaller and faster for the fast model.
     """
+    import re
+
+    lower = transcript.lower().strip()
+
+    # ----------------------------------------------------------------
+    # 1. Plain action keywords (word-boundary safe)
+    # ----------------------------------------------------------------
     ACTION_KEYWORDS = [
         # File ops
         "open", "launch", "start", "close", "quit", "exit",
@@ -100,11 +107,63 @@ def is_tool_intent(transcript: str) -> bool:
         "search", "find", "list", "show", "what files",
         # System
         "volume", "mute", "unmute", "battery", "shutdown", "restart", "sleep",
-        "processes", "running", "cpu", "memory",
+        "processes", "running", "cpu", "memory", "brightness", "screen brightness",
         # App / clipboard
         "clipboard", "paste", "copy to clipboard",
         # Shell
         "run", "execute", "command",
+        # Timers & reminders — explicit words
+        "remind", "reminder", "reminders",
+        "timer", "alarm", "alert",
+        "notify me", "notify", "schedule",
+        "cancel timer", "cancel reminder",
+        "list timers", "list reminders",
+        "how much time", "time left",
+        # Files / folders / paths
+        "folder", "directory", "desktop", "downloads", "documents", "pictures",
+        "photo", "image", "video", "screenshot",
+        "show me", "show the", "preview",
     ]
-    lower = transcript.lower()
-    return any(kw in lower for kw in ACTION_KEYWORDS)
+    if any(kw in lower for kw in ACTION_KEYWORDS):
+        return True
+
+    # ----------------------------------------------------------------
+    # 2. Regex: time-offset phrases — "in 20 seconds", "in 5 mins", etc.
+    # ----------------------------------------------------------------
+    TIME_OFFSET_RE = re.compile(
+        r"\bin\s+\d+\s*(second|seconds|sec|secs|minute|minutes|min|mins|hour|hours|hr|hrs)\b",
+        re.IGNORECASE,
+    )
+    if TIME_OFFSET_RE.search(lower):
+        return True
+
+    # ----------------------------------------------------------------
+    # 3. Regex: clock-time phrases — "at 3pm", "at 15:30", "at 9 AM"
+    # ----------------------------------------------------------------
+    CLOCK_TIME_RE = re.compile(
+        r"\bat\s+\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?",
+        re.IGNORECASE,
+    )
+    if CLOCK_TIME_RE.search(lower):
+        return True
+
+    # ----------------------------------------------------------------
+    # 4. Regex: looks like a file path or has a file extension
+    #    e.g. "open photo.jpg", "open C:\Users\me\file.pdf"
+    # ----------------------------------------------------------------
+    FILE_EXT_RE = re.compile(
+        r"\b\w[\w\s\-]*\.(jpg|jpeg|png|gif|bmp|webp|pdf|docx|xlsx|pptx|"
+        r"txt|csv|mp4|mp3|wav|zip|rar|exe|lnk|bat|py|js|html)\b",
+        re.IGNORECASE,
+    )
+    if FILE_EXT_RE.search(lower):
+        return True
+
+    # Looks like an absolute Windows path
+    if re.search(r"[a-zA-Z]:\\", lower) or "program files" in lower or "appdata" in lower:
+        return True
+
+    return False
+
+
+

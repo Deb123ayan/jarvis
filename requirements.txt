@@ -39,6 +39,12 @@ pystray==0.19.5
 fastapi==0.111.0
 uvicorn==0.29.0
 
+# Document reading (PDF, DOCX, XLSX, PPTX)
+pymupdf>=1.24.0
+python-docx>=1.1.0
+openpyxl>=3.1.0
+python-pptx>=0.6.23
+
 # Utilities
 pyyaml==6.0.1
 loguru==0.7.2

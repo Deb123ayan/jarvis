@@ -5,6 +5,25 @@
 
 ---
 
+## 🏗 Build Progress (Live)
+
+| Phase | Description | Status | % |
+|---|---|---|---|
+| Phase 1 | Core Pipeline | ✅ Complete | 100% |
+| Phase 2 | Tool Registry & Core Tools | ✅ Complete + Extras | 100% |
+| Phase 3 | Intelligence Layer | 🟡 In Progress | 35% |
+| Phase 4 | Perception Layer | ❌ Not Started | 0% |
+| Phase 5 | Ambient Intelligence | 🟡 In Progress | 20% |
+| Phase 6 | Web, Media & Communication | ❌ Not Started | 0% |
+| Phase 7 | Plugin System | 🟡 Skeleton Only | 15% |
+| Phase 8 | System Tray & Polish | ❌ Not Started | 5% |
+| Phase 9 | Remote Access | ❌ Not Started | 0% |
+
+**Overall: ~40% of full PRD vision complete.**
+Last updated: 2026-06-17
+
+---
+
 ## Table of Contents
 
 1. [Vision](#1-vision)
@@ -1030,132 +1049,142 @@ RISK_LEVELS = {
 
 ## 11. Build Phases
 
-### Phase 1 — Core Pipeline (Week 1)
+### Phase 1 — Core Pipeline (Week 1) ✅ COMPLETE
 **Goal:** Wake word → voice → LLM → spoken response. Working end-to-end.
 
-- [ ] Wake word detection with ring buffer pre-capture
-- [ ] STT with faster-whisper (small.en, GPU, built-in VAD)
-- [ ] Fast model integration (Qwen2.5:3b, forced JSON, streaming)
-- [ ] Kokoro TTS with sentence streaming
-- [ ] Interruption handling (stop speaking when wake word fires)
-- [ ] Basic orchestrator with thread model
-- [ ] Config system (PyYAML + hot reload)
-- [ ] Loguru structured logging
+- [x] Wake word detection with ring buffer pre-capture
+- [x] STT with faster-whisper (small.en, GPU, built-in VAD)
+- [x] Fast model integration (Llama 3.3 70B via OpenRouter, forced JSON, streaming)
+- [x] Kokoro TTS with sentence streaming
+- [x] Interruption handling (stop speaking when wake word fires)
+- [x] Basic orchestrator with thread model (non-blocking concurrent input loop)
+- [x] Config system (PyYAML + hot reload)
+- [x] Loguru structured logging
+- [x] Event bus pub/sub (`core/events.py`)
 
-**Exit criteria:** Say wake word, ask a question, hear a natural response. Second wake word works while TTS is speaking.
+**Exit criteria:** ✅ MET — Wake word → question → natural spoken response. Text input also works concurrently with timers.
 
 ---
 
-### Phase 2 — Tool Registry & Core Tools (Week 1-2)
+### Phase 2 — Tool Registry & Core Tools (Week 1-2) ✅ COMPLETE + EXTRAS
 **Goal:** JARVIS executes real actions.
 
-- [ ] Tool registry with risk classification
-- [ ] Confirmation gates (voice for high, tray for critical)
-- [ ] Filesystem tools (create, read, move, delete, search, organize)
-- [ ] System tools (volume, brightness, power, wifi, processes, windows)
-- [ ] App control (launch, close, focus)
-- [ ] Clipboard tools
-- [ ] Shell runner (with confirmation gate)
+- [x] Tool registry with risk classification (`tools/registry.py`)
+- [x] Confirmation gates — risk levels enforced in registry (voice gate for HIGH not yet wired)
+- [x] Filesystem tools — read, write, delete, move, search, dir_list (`tools/filesystem.py`)
+- [x] **[EXTRA]** Rich document reading — PDF (PyMuPDF), DOCX, XLSX, PPTX (`tools/filesystem.py`)
+- [x] System tools — volume, brightness, battery, power, processes (`tools/system.py`)
+- [x] App control — launch, close, focus, list (`tools/apps.py`)
+- [x] **[EXTRA]** Universal app launcher — 9-tier search (Start Menu, Desktop .lnk, Registry, Steam manifests, Epic Games manifests, game dirs on all drives, PATH, Program Files)
+- [x] **[EXTRA]** `open_path` tool — opens any file/folder/image/exe via `os.startfile` with glob support
+- [x] Clipboard tools — read, write (`tools/clipboard.py`)
+- [x] Shell runner with high-risk gate (`tools/shell.py`)
+- [x] **[EXTRA]** Countdown timers with TTS alert and repeat notifications (`tools/timers.py`)
+- [x] **[EXTRA]** APScheduler-based proactive reminders — fires even when user is idle (`tools/reminders.py`)
+- [x] **[EXTRA]** Regex-based tool intent routing — catches "in 20 seconds", "at 3pm", file extensions, etc.
+- [x] **[EXTRA]** Multi-API-key load balancing across OpenRouter keys
 
-**Exit criteria:** "Open VS Code", "Set volume to 40", "Delete test.txt" all work correctly.
+**Exit criteria:** ✅ MET — Apps, files, system controls, timers, reminders, games all work.
 
 ---
 
-### Phase 3 — Intelligence Layer (Week 2)
+### Phase 3 — Intelligence Layer (Week 2) 🟡 35% DONE
 **Goal:** ReAct agent loop + two-model routing + proper memory.
 
-- [ ] AgentLoop with self-correction
-- [ ] Two-model router (fast/deep decision logic)
-- [ ] Working memory with compression
-- [ ] Episodic memory (SQLite FTS5)
-- [ ] Semantic memory (ChromaDB, lazy load)
-- [ ] Knowledge graph (NetworkX)
+- [x] Two-model router — fast (Llama 3.3 70B) / deep (DeepSeek) automatic routing
+- [x] Working memory — conversation history (last 12 turns deque)
+- [ ] AgentLoop with self-correction (ReAct: Reason → Act → Observe → repeat) ← **NEXT PRIORITY**
+- [ ] Episodic memory (SQLite FTS5) ← **NEXT PRIORITY**
+- [ ] Semantic memory (ChromaDB, lazy load) ← **NEXT PRIORITY**
+- [ ] Knowledge graph (NetworkX) ← **NEXT PRIORITY**
 - [ ] Auto memory extraction (runs async after every conversation)
 - [ ] Memory recall injection into LLM prompt
 
-**Exit criteria:** Ask a multi-step question. JARVIS plans and executes multiple tool calls. Tell it your name, close and reopen, ask "what's my name?" — it knows.
+**Exit criteria:** ❌ NOT MET — JARVIS forgets everything on restart. Memory system not built yet.
 
 ---
 
-### Phase 4 — Perception Layer (Week 3)
+### Phase 4 — Perception Layer (Week 3) ❌ NOT STARTED
 **Goal:** JARVIS knows what you're doing without being told.
 
-- [ ] Context monitor (active app, window, processes)
+- [ ] Context monitor (active app, window, processes) — needs `perception/context.py`
 - [ ] Context injected into every agent prompt
-- [ ] Screen capture on demand (mss)
-- [ ] Vision model integration (Qwen2-VL via Ollama)
+- [ ] Screen capture on demand (mss) — needs `perception/screen.py`
+- [ ] Vision model integration (OpenRouter vision API)
 - [ ] "What am I looking at?" works
 - [ ] App-specific context plugins (VS Code → show current file, Chrome → show URL)
 
-**Exit criteria:** Switch to VS Code. Ask "what file am I editing?" JARVIS answers correctly without you mentioning VS Code.
+**Exit criteria:** ❌ NOT MET
 
 ---
 
-### Phase 5 — Ambient Intelligence (Week 3-4)
+### Phase 5 — Ambient Intelligence (Week 3-4) 🟡 20% DONE
 **Goal:** JARVIS acts without being asked.
 
-- [ ] Ambient loop (60s interval background reasoning)
-- [ ] Proactive reminders from episodic memory
+- [x] **[EXTRA]** Proactive time-based reminders via APScheduler — fires TTS unprompted even when idle (`tools/reminders.py`)
+- [ ] Ambient loop (60s interval background reasoning) — needs `agent/ambient.py`
 - [ ] CPU/memory anomaly detection and notification
 - [ ] Calendar-aware morning briefing
-- [ ] Tab/window clutter detection
+- [ ] Tab/window clutter detection (needs perception layer first)
 - [ ] Focus session detection (auto-silence non-critical notifications)
 
-**Exit criteria:** Have a meeting in 10 minutes. JARVIS reminds you without being asked. CPU spikes — JARVIS tells you which process is responsible.
+**Exit criteria:** ❌ PARTIAL — Reminders work. Ambient reasoning loop not built.
 
 ---
 
-### Phase 6 — Web, Media & Communication (Week 4)
+### Phase 6 — Web, Media & Communication (Week 4) ❌ NOT STARTED
 **Goal:** JARVIS controls the internet.
 
-- [ ] Browser automation (navigate, click, fill forms, scrape)
-- [ ] Web search and summarization
-- [ ] Email (read, compose, send via SMTP)
-- [ ] Calendar management
-- [ ] Media control (yt-dlp for download, system media keys)
-- [ ] Notes and todos (SQLite backed)
+- [ ] Browser automation (navigate, click, fill forms, scrape) — needs `tools/browser.py` (Playwright)
+- [ ] Web search and summarization — needs `tools/web.py`
+- [ ] Email (read, compose, send via SMTP) — needs `tools/email_tool.py`
+- [ ] Calendar management — needs `tools/calendar_tool.py`
+- [ ] Media control (yt-dlp for download, system media keys) — needs `tools/media.py`
+- [ ] Notes and todos (SQLite backed) — needs `tools/notes.py`
 
-**Exit criteria:** "Search for the latest news on AI and read me the top 3 headlines." Works start to finish.
+**Exit criteria:** ❌ NOT MET
 
 ---
 
-### Phase 7 — Plugin System (Week 5)
+### Phase 7 — Plugin System (Week 5) 🟡 15% DONE
 **Goal:** New capabilities require zero changes to core.
 
-- [ ] JarvisPlugin base class
-- [ ] PluginLoader with hot-reload
+- [x] `JarvisPlugin` base class — ABC skeleton exists (`core/plugin_base.py`)
+- [x] `Tool` dataclass — implemented and used by all existing tools (`tools/registry.py`)
+- [ ] PluginLoader with hot-reload — needs `core/plugin_loader.py`
 - [ ] Tool schema auto-regenerated on plugin load/unload
 - [ ] 3 reference plugins: Spotify, system stats, custom shortcuts
 - [ ] Plugin error isolation (plugin crash cannot crash JARVIS)
 
-**Exit criteria:** Write a new plugin, drop it in `/plugins/`, say the wake word — new tool available immediately without restarting.
+**Exit criteria:** ❌ NOT MET — Base class exists but no loader.
 
 ---
 
-### Phase 8 — System Tray & Polish (Week 5-6)
+### Phase 8 — System Tray & Polish (Week 5-6) ❌ 5% DONE
 **Goal:** JARVIS lives in the background elegantly.
 
-- [ ] System tray icon with status indicator
+- [x] `ui/` directory exists (placeholder)
+- [ ] System tray icon with status indicator — needs `ui/tray.py` (pystray)
 - [ ] Right-click menu: mute/unmute, pause ambient loop, open logs, reload plugins
 - [ ] Windows startup entry (Task Scheduler or registry)
 - [ ] Crash recovery (watchdog restarts the process)
 - [ ] Performance profiling — ensure < 3% idle CPU
-- [ ] Wake word custom training on your voice
+- [ ] Wake word custom training on your voice (using `hey_mycroft` fallback)
 
-**Exit criteria:** Machine boots. JARVIS is running within 30 seconds. Tray icon visible. All functionality works.
+**Exit criteria:** ❌ NOT MET
 
 ---
 
-### Phase 9 — Remote Access (Optional, Week 6+)
+### Phase 9 — Remote Access (Optional, Week 6+) ❌ NOT STARTED
 **Goal:** JARVIS accessible from phone on same Tailscale network.
 
-- [ ] FastAPI server (read-only tools only by default)
+- [ ] FastAPI server (read-only tools only by default) — `fastapi` installed, no server code yet
 - [ ] API key auth with scope limitation
 - [ ] Rate limiter
 - [ ] Tailscale setup
 - [ ] Dangerous tools excluded from remote scope
 
-**Exit criteria:** From phone on Tailscale, send a voice note — JARVIS transcribes and responds.
+**Exit criteria:** ❌ NOT MET
 
 ---
 

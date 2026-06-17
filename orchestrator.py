@@ -4,6 +4,7 @@ orchestrator.py — JARVIS entry point.
 Initialises all modules, registers Phase 2 tools, and starts the thread model.
 """
 
+import threading
 import time
 from loguru import logger
 
@@ -23,6 +24,7 @@ from tools.apps import APP_TOOLS
 from tools.clipboard import CLIPBOARD_TOOLS
 from tools.shell import SHELL_TOOLS
 from tools.timers import TIMER_TOOLS
+from tools.reminders import REMINDER_TOOLS
 
 # LLM (tool-aware)
 from llm.client import LLMClient
@@ -40,6 +42,7 @@ def _register_tools():
     registry.register_many(CLIPBOARD_TOOLS)
     registry.register_many(SHELL_TOOLS)
     registry.register_many(TIMER_TOOLS)
+    registry.register_many(REMINDER_TOOLS)
     logger.info(f"Registered {len(registry.list_tools())} tools: {registry.list_tools()}")
 
 
@@ -48,10 +51,12 @@ def main():
     logger.info("  JARVIS — Starting up")
     logger.info("  Capabilities:")
     logger.info("   - Filesystem: Read, write, and manage files/directories")
+    logger.info("   - Documents:  Read PDF, DOCX, XLSX, PPTX files")
     logger.info("   - System: Control volume, brightness, battery, etc.")
     logger.info("   - Apps: Open and close applications")
     logger.info("   - Clipboard: Read from and write to the clipboard")
     logger.info("   - Shell: Execute terminal commands")
+    logger.info("   - Reminders: Proactive time-based spoken reminders")
     logger.info("=" * 60)
     logger.info(f"Config loaded. Fast model: {config.get('models.fast')} | Deep: {config.get('models.deep')}")
 
@@ -64,28 +69,33 @@ def main():
     voice_pipeline = VoicePipeline()
     wake_word_listener = WakeWordListener()
 
-    # Start live dashboard first so it captures all events
-    # dashboard = Dashboard(refresh_per_second=15)
-    # dashboard.start()
-
     # Start threads
     tts_worker.start()
     voice_pipeline.start()
     wake_word_listener.start()
 
     logger.info("JARVIS is running in VOICE + TEXT mode. (Type 'help' for tools, 'quit' to exit)")
-    
+
     def on_response(text: str):
         # Print with carriage return to clear the current line, print JARVIS message,
         # then redraw the "You: " prompt and flush so it appears immediately
         print(f"\r\n[JARVIS]: {text}\nYou: ", end="", flush=True)
     bus.subscribe(Event.TTS_ENQUEUE, on_response)
 
+    def _dispatch_in_background(user_input: str):
+        """Run LLM dispatch in a daemon thread so input() is never blocked."""
+        threading.Thread(
+            target=llm_client._dispatch,
+            args=(user_input,),
+            daemon=True,
+            name="LLMDispatch-Text",
+        ).start()
+
+    print("You: ", end="", flush=True)
     try:
         while True:
-            time.sleep(0.5)
-            user_input = input("You: ")
-            
+            user_input = input()   # No "You: " arg — we print it manually so timer alerts can redraw it
+
             if user_input.lower().strip() in ["exit", "quit"]:
                 break
             elif user_input.lower().strip() == "help":
@@ -93,16 +103,23 @@ def main():
                 for t in registry.list_tools():
                     print(f"  - {t}")
                 print()
+                print("You: ", end="", flush=True)
             elif user_input.strip():
-                llm_client._dispatch(user_input)
-                
+                # Fire-and-forget: returns immediately so we can type again right away
+                _dispatch_in_background(user_input)
+                # Prompt is redrawn by on_response when JARVIS replies;
+                # redraw immediately so user sees it's ready to accept input
+                print("You: ", end="", flush=True)
+            else:
+                print("You: ", end="", flush=True)
+
     except KeyboardInterrupt:
         logger.info("JARVIS shutting down...")
         wake_word_listener.stop()
         voice_pipeline.stop()
-        # dashboard.stop()
         logger.info("Goodbye.")
 
 
 if __name__ == "__main__":
     main()
+
