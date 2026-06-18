@@ -19,7 +19,7 @@ if exist "%JARVIS_DIR%\venv\Scripts\activate.bat" (
 )
 
 :: Launch JARVIS CLI
-python cli.py
+python orchestrator.py
 
 :: Keep window open on error
 if errorlevel 1 (

@@ -52,7 +52,7 @@ APP_ALIASES: dict[str, str] = {
     "zoom": "Zoom.exe",
     "obs": "obs64.exe",
     "vlc": "vlc.exe",
-    "steam": "steam.exe",
+    "steam": "steam://open/main",
 }
 
 
